@@ -18,6 +18,7 @@ from ip_mensageria_alocacao_api.core.auxiliar import (
     thompson_sample,
 )
 from ip_mensageria_alocacao_api.core.modelos import (
+    Classificador,
     LinhaCuidado,
     Mensagem,
     MensagemTipo,
@@ -33,7 +34,7 @@ def prever_probabilidade_mensagem_ser_efetiva(
     linha_cuidado: LinhaCuidado,
     mensagem_tipo: MensagemTipo,
     mensagem: Mensagem,
-    classificadores,
+    classificadores: Classificador,
 ) -> Predicao:
     logger.info(f"Iniciando predição para cidadão {cidadao_id}")
     cidadao_caracteristicas = obter_caracteristicas_usuario(cidadao_id)

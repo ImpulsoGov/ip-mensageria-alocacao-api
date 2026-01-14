@@ -10,7 +10,7 @@ class Classificador(BaseModel):
     modelos: list[Any]
     atributos_colunas: list[str]
     atributos_categoricos: list[str]
-    imputador_numerico: object
+    imputador_numerico: Any
     template_embedding_dims: int
     midia_embedding_dims: int
 

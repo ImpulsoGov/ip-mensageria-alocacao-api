@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 from http import HTTPStatus
+from typing import Callable, ParamSpec, TypeVar
 
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -12,6 +13,9 @@ from passlib.context import CryptContext
 from ip_mensageria_alocacao_api.core import configs
 from ip_mensageria_alocacao_api.core.bd import bq_client
 from ip_mensageria_alocacao_api.core.modelos import TokenDados, UsuarioNaBase
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -107,17 +111,16 @@ def obter_usuario_atual_via_api_key(
     return user
 
 
-def validar_token(func):
+def validar_token(func: Callable[P, R]) -> Callable[P, R]:
     @wraps(func)
-    def decorator(*args, **kwargs):
+    def decorator(*args: P.args, **kwargs: P.kwargs) -> R:
         token = kwargs.get("X-Api-Key")
-        if token:
-            obter_usuario_atual_via_api_key(token)
-            return func(*args, **kwargs)
-        else:
+        if not isinstance(token, str) or not token:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail="Bad Request :: No api key provided",
             )
+        obter_usuario_atual_via_api_key(token)
+        return func(*args, **kwargs)
 
     return decorator

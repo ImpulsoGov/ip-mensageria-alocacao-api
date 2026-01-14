@@ -7,6 +7,7 @@ from typing import Optional
 
 from catboost import CatBoostClassifier
 from google.cloud import storage
+from google.cloud.storage.bucket import Bucket
 from google.oauth2 import service_account
 
 from ip_mensageria_alocacao_api.core.configs import (
@@ -26,13 +27,13 @@ if not ARTEFATOS_PREDICAO_URI or not ARTEFATOS_PREDICAO_URI.startswith("gs:/"):
     raise RuntimeError("Defina a envvar ARTEFATOS_PREDICAO_URI (gs://bucket/prefix)")
 
 
-def _parse_gcs(uri: str):
+def _parse_gcs(uri: str) -> tuple[str, str]:
     assert uri.startswith("gs://")
     bucket, *path = uri[5:].split("/", 1)
     return bucket, (path[0] if path else "")
 
 
-def _baixar_blob_como_bytes(bucket, path) -> bytes:
+def _baixar_blob_como_bytes(bucket: Bucket, path: str) -> bytes:
     blob = bucket.blob(path)
     return blob.download_as_bytes()
 

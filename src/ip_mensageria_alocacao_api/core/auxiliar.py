@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from functools import lru_cache
 from http import HTTPStatus
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from catboost import Pool
 from fastapi import HTTPException
 from google.cloud.bigquery.table import RowIterator, _EmptyRowIterator
+from numpy import dtype, ndarray
 from pydantic import AnyUrl
 
 from ip_mensageria_alocacao_api.core.bd import bq_client
@@ -42,7 +43,7 @@ def beta_from_mean_se(p: float, se: float, eps: float = 1e-6) -> Tuple[float, fl
 
 
 @lru_cache(maxsize=128)
-def obter_caracteristicas_usuario(cidadao_id) -> CidadaoCaracteristicas:
+def obter_caracteristicas_usuario(cidadao_id: str) -> CidadaoCaracteristicas:
     query = f"""
         SELECT
             DATE_DIFF(
@@ -167,8 +168,8 @@ def preparar_atributos_para_predicao(
     mensagem_tipo: MensagemTipo,
     mensagem_dia_semana: DiaSemana,
     mensagem_horario: int,
-    mensagem_template_embedding: list[float],
-    mensagem_midia_embedding: list[float],
+    mensagem_template_embedding: list[float] | ndarray[Any, dtype[Any]],
+    mensagem_midia_embedding: list[float] | ndarray[Any, dtype[Any]],
 ) -> pd.DataFrame:
     # categóricas do treino: linha_cuidado, cidadao_sexo, cidadao_raca_cor, mensagem_dia_semana
     # numéricas do treino: municipio_prop..., plano_privado, idade, tempo_desde..., mensagem_horario_relativo_12h
