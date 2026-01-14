@@ -18,8 +18,8 @@ lint-check:  ## Check whether the codebase satisfies the linter rules.
 	@echo "Checking linter rules..."
 	@echo "========================"
 	@echo
-	@uv run ruff check $(path)
-	@uv run mypy $(path)
+	@uv run ruff check $(path)/src
+	@uv run mypy $(path)/src
 
 .PHONY: ruff
 ruff: ## Apply ruff.
