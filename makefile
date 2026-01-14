@@ -26,8 +26,8 @@ ruff: ## Apply ruff.
 	@echo "Applying ruff..."
 	@echo "================"
 	@echo
-	@uv run ruff check --fix $(path)
-	@uv run ruff format $(path)
+	@uv run ruff check --fix $(path)/src
+	@uv run ruff format $(path)/src
 
 .PHONY: mypy
 mypy: ## Apply mypy.
@@ -35,7 +35,7 @@ mypy: ## Apply mypy.
 	@echo "Applying mypy..."
 	@echo "================="
 	@echo
-	@uv run mypy $(path)
+	@uv run mypy $(path)/src
 
 .PHONY: help
 help: ## Show this help message.
