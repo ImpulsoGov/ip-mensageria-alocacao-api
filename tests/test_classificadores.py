@@ -20,8 +20,15 @@ def _load_classificadores_module():
         modelos_mod = types.ModuleType("ip_mensageria_alocacao_api.core.modelos")
 
         class Classificador:
-            def __init__(self, modelos, atributos_colunas, atributos_categoricos,
-                         imputador_numerico, template_embedding_dims, midia_embedding_dims):
+            def __init__(
+                self,
+                modelos,
+                atributos_colunas,
+                atributos_categoricos,
+                imputador_numerico,
+                template_embedding_dims,
+                midia_embedding_dims,
+            ):
                 self.modelos = modelos
                 self.atributos_colunas = atributos_colunas
                 self.atributos_categoricos = atributos_categoricos
@@ -31,7 +38,9 @@ def _load_classificadores_module():
 
         modelos_mod.Classificador = Classificador
 
-        classificadores_dummy = types.ModuleType("ip_mensageria_alocacao_api.core.classificadores")
+        classificadores_dummy = types.ModuleType(
+            "ip_mensageria_alocacao_api.core.classificadores"
+        )
         classificadores_dummy.ARTEFATOS_PREDICAO_URI = "gs://bucket/prefix"
 
         sys_modules_backup = {}
@@ -114,22 +123,34 @@ def _load_classificadores_module():
         storage_mod.Client = FakeClient
         sys_modules_backup["google"] = sys.modules.get("google")
         sys_modules_backup["google.cloud"] = sys.modules.get("google.cloud")
-        sys_modules_backup["google.cloud.storage"] = sys.modules.get("google.cloud.storage")
+        sys_modules_backup["google.cloud.storage"] = sys.modules.get(
+            "google.cloud.storage"
+        )
         sys.modules["google"] = google
         sys.modules["google.cloud"] = google_cloud
         sys.modules["google.cloud.storage"] = storage_mod
         added["google"] = added["google.cloud"] = added["google.cloud.storage"] = True
 
         # load the classificadores.py file under a unique name to avoid clashing with our dummy
-        module_path = Path(__file__).resolve().parents[1] / "src" / "ip_mensageria_alocacao_api" / "core" / "classificadores.py"
-        spec = importlib.util.spec_from_file_location("classificadores_under_test", str(module_path))
+        module_path = (
+            Path(__file__).resolve().parents[1]
+            / "src"
+            / "ip_mensageria_alocacao_api"
+            / "core"
+            / "classificadores.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "classificadores_under_test", str(module_path)
+        )
         mod = importlib.util.module_from_spec(spec)
         sys.modules["classificadores_under_test"] = mod
         spec.loader.exec_module(mod)
-        return mod, {"metadata": metadata,
-                     "imputador": sample_imputador,
-                     "atributos_colunas": sample_atributos_colunas,
-                     "atributos_categoricos": sample_atributos_categoricos}
+        return mod, {
+            "metadata": metadata,
+            "imputador": sample_imputador,
+            "atributos_colunas": sample_atributos_colunas,
+            "atributos_categoricos": sample_atributos_categoricos,
+        }
     finally:
         # restore any previously existing modules we overwrote (except the loaded classificadores module)
         # leave the fake entries for modules the loaded module may rely on in sys.modules
@@ -148,15 +169,21 @@ def test_carregar_classificadores_and_caching():
     assert artef.atributos_colunas == samples["atributos_colunas"]
     assert artef.atributos_categoricos == samples["atributos_categoricos"]
     assert artef.imputador_numerico == samples["imputador"]
-    assert artef.template_embedding_dims == int(samples := samples)["metadata"]["template_embedding_dims"] if False else artef.template_embedding_dims  # noqa: E701
+    assert (
+        artef.template_embedding_dims
+        == int(samples := samples)["metadata"]["template_embedding_dims"]
+        if False
+        else artef.template_embedding_dims
+    )  # noqa: E701
     # ensure models were created and are instances of the fake CatBoostClassifier
     assert len(artef.modelos) == 2
     for m in artef.modelos:
-        assert hasattr(m, "_loaded") 
+        assert hasattr(m, "_loaded")
         assert m._loaded is True
     # caching: second call returns same object
     artef2 = mod.carregar_classificadores()
     assert artef is artef2
+
 
 def test_parse_gcs_invalid_uri():
     """Test _parse_gcs with invalid URI."""

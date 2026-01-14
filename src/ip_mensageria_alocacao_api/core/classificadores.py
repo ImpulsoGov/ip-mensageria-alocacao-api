@@ -46,27 +46,32 @@ def carregar_classificadores() -> Classificador:
     bucket_name, prefix = _parse_gcs(ARTEFATOS_PREDICAO_URI)
     bucket = storage_client.bucket(bucket_name)
 
-    meta = json.loads(_baixar_blob_como_bytes(
-        bucket,
-        f"{prefix}/meta/metadata.json").decode("utf-8"),
+    meta = json.loads(
+        _baixar_blob_como_bytes(bucket, f"{prefix}/meta/metadata.json").decode("utf-8"),
     )
     num_modelos = int(meta["num_modelos"])
     template_embedding_dims = int(meta["template_embedding_dims"])
     midia_embedding_dims = int(meta["midia_embedding_dims"])
 
     # pickles
-    imputador_numerico = pickle.loads(_baixar_blob_como_bytes(
-        bucket,
-        f"{prefix}/meta/imputador_numerico.pkl",
-    ))
-    atributos_colunas = pickle.loads(_baixar_blob_como_bytes(
-        bucket,
-        f"{prefix}/meta/atributos_colunas.pkl",
-    ))
-    atributos_categoricos = pickle.loads(_baixar_blob_como_bytes(
-        bucket,
-        f"{prefix}/meta/atributos_categoricos.pkl",
-    ))
+    imputador_numerico = pickle.loads(
+        _baixar_blob_como_bytes(
+            bucket,
+            f"{prefix}/meta/imputador_numerico.pkl",
+        )
+    )
+    atributos_colunas = pickle.loads(
+        _baixar_blob_como_bytes(
+            bucket,
+            f"{prefix}/meta/atributos_colunas.pkl",
+        )
+    )
+    atributos_categoricos = pickle.loads(
+        _baixar_blob_como_bytes(
+            bucket,
+            f"{prefix}/meta/atributos_categoricos.pkl",
+        )
+    )
 
     # modelos
     modelos: list[CatBoostClassifier] = []

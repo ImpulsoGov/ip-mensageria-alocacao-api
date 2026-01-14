@@ -57,9 +57,7 @@ def prever_probabilidade_mensagem_ser_efetiva(
     else:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail=(
-                "Bad Request :: `template_nome` ou `template` não informado."
-            ),
+            detail=("Bad Request :: `template_nome` ou `template` não informado."),
         )
     logger.info("Template embedding obtido")
     if mensagem.midia_url:
@@ -84,10 +82,7 @@ def prever_probabilidade_mensagem_ser_efetiva(
     pool = converter_df_em_pool(atributos, classificadores)
 
     # ensemble bootstrap -> média e desvio entre modelos
-    ps = np.array([
-        float(m.predict_proba(pool)[0, 1])
-        for m in classificadores.modelos
-    ])
+    ps = np.array([float(m.predict_proba(pool)[0, 1]) for m in classificadores.modelos])
     p_mean = float(ps.mean())
     p_std = float(ps.std(ddof=1)) if len(ps) > 1 else 0.0
 
@@ -118,4 +113,3 @@ def alocar_entre_mensagens(predicoes: Sequence[Predicao]) -> PredicaoSimulacao:
         mensagem=predicoes[idx].mensagem,
         probabilidade_sorteada=float(amostras[idx]),
     )
-

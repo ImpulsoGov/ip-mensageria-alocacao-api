@@ -137,6 +137,7 @@ async def test_login_para_token_successo(monkeypatch):
     monkeypatch.setattr(autenticacao.bq_client, "query", mock_query)
 
     from fastapi.security import OAuth2PasswordRequestForm
+
     form_data = OAuth2PasswordRequestForm(username="testuser", password="password")
 
     response = await routes.login_para_token(form_data)
@@ -154,6 +155,7 @@ async def test_login_para_token_falha(monkeypatch):
     monkeypatch.setattr(autenticacao.bq_client, "query", mock_query)
 
     from fastapi.security import OAuth2PasswordRequestForm
+
     form_data = OAuth2PasswordRequestForm(username="testuser", password="password")
 
     with pytest.raises(HTTPException) as exc_info:
@@ -163,6 +165,7 @@ async def test_login_para_token_falha(monkeypatch):
 
 # Test authentication edge cases
 
+
 def test_obter_usuario_atual_via_api_key_missing_header():
     """Test obter_usuario_atual_via_api_key with missing X-Api-Key header."""
     with pytest.raises(HTTPException) as exc_info:
@@ -170,19 +173,24 @@ def test_obter_usuario_atual_via_api_key_missing_header():
     assert exc_info.value.status_code == 400
     assert "No api key provided" in str(exc_info.value.detail)
 
+
 @patch("ip_mensageria_alocacao_api.core.autenticacao.jwt.decode")
 def test_obter_usuario_atual_via_api_key_invalid_jwt(mock_jwt_decode):
     """Test obter_usuario_atual_via_api_key with invalid JWT."""
     from jose import JWTError
+
     mock_jwt_decode.side_effect = JWTError("Invalid JWT")
 
     with pytest.raises(HTTPException) as exc_info:
         autenticacao.obter_usuario_atual_via_api_key("invalid_token")
     assert exc_info.value.status_code == 401
 
+
 @patch("ip_mensageria_alocacao_api.core.autenticacao.jwt.decode")
 @patch("ip_mensageria_alocacao_api.core.autenticacao.obter_usuario")
-def test_obter_usuario_atual_via_api_key_user_not_found(mock_obter_usuario, mock_jwt_decode):
+def test_obter_usuario_atual_via_api_key_user_not_found(
+    mock_obter_usuario, mock_jwt_decode
+):
     """Test obter_usuario_atual_via_api_key when user doesn't exist."""
     mock_jwt_decode.return_value = {"sub": "nonexistent"}
     mock_obter_usuario.return_value = None
@@ -190,6 +198,7 @@ def test_obter_usuario_atual_via_api_key_user_not_found(mock_obter_usuario, mock
     with pytest.raises(HTTPException) as exc_info:
         autenticacao.obter_usuario_atual_via_api_key("valid_token")
     assert exc_info.value.status_code == 401
+
 
 @patch("ip_mensageria_alocacao_api.core.autenticacao.jwt.decode")
 def test_obter_usuario_atual_via_api_key_missing_sub(mock_jwt_decode):

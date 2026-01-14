@@ -18,13 +18,15 @@ class Classificador(BaseModel):
 class CidadaoCaracteristicas(BaseModel):
     idade: Optional[int]
     plano_saude_privado: Optional[bool]
-    raca_cor: Optional[Literal[
-        "Amarela",
-        "Branca",
-        "Indígena",
-        "Parda",
-        "Preta",
-    ]]
+    raca_cor: Optional[
+        Literal[
+            "Amarela",
+            "Branca",
+            "Indígena",
+            "Parda",
+            "Preta",
+        ]
+    ]
     sexo: Optional[Literal["Feminino", "Masculino"]]
     tempo_desde_ultimo_procedimento: Optional[int]
     municipio_prop_domicilios_zona_rural: Optional[float]
@@ -68,6 +70,7 @@ class Predicao(BaseModel):
 class PredicaoSimulacao(BaseModel):
     mensagem: Mensagem
     probabilidade_sorteada: float
+
 
 class Template(BaseModel):
     texto: str

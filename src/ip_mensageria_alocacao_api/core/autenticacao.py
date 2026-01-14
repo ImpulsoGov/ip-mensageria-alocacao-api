@@ -71,7 +71,9 @@ def criar_token_acesso(data: dict, expires_delta: timedelta | None = None) -> st
     return encoded_jwt
 
 
-def obter_usuario_atual_via_api_key(x_api_key: str = Header(None, alias="X-Api-Key")) -> UsuarioNaBase:
+def obter_usuario_atual_via_api_key(
+    x_api_key: str = Header(None, alias="X-Api-Key"),
+) -> UsuarioNaBase:
     if not x_api_key:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -114,7 +116,8 @@ def validar_token(func):
             return func(*args, **kwargs)
         else:
             raise HTTPException(
-                    status_code=HTTPStatus.BAD_REQUEST,
-                    detail="Bad Request :: No api key provided",
-                )
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail="Bad Request :: No api key provided",
+            )
+
     return decorator

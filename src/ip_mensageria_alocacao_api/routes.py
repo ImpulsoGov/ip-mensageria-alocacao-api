@@ -79,6 +79,7 @@ async def prever_efetividade_mensagem(
         classificadores=classificadores,
     )
 
+
 @router.post("/alocar")
 async def alocar(
     predicoes: Sequence[Predicao],

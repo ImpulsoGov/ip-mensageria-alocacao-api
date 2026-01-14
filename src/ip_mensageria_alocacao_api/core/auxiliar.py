@@ -119,19 +119,21 @@ def obter_tempo_desde_ultimo_procedimento(
     if linha_cuidado == LinhaCuidado.citotopatologico:
         resultado_query = bq_client.query(query_cito).result()
         assert resultado_query.total_rows == 1
-        tempo_desde_ultimo_procedimento = next(resultado_query).tempo_desde_ultimo_procedimento
+        tempo_desde_ultimo_procedimento = next(
+            resultado_query
+        ).tempo_desde_ultimo_procedimento
     elif linha_cuidado == LinhaCuidado.cronicos:
         resultado_query_diabetes = bq_client.query(query_diabetes).result()
         resultado_query_hipertensao = bq_client.query(query_hipertensao).result()
-        if isinstance(resultado_query_diabetes, RowIterator) and isinstance(resultado_query_hipertensao, RowIterator):
-            tempo_proc_dia = (
-                next(resultado_query_diabetes)
-                .tempo_desde_ultimo_procedimento
-            )
-            tempo_proc_hiper = (
-                next(resultado_query_hipertensao)
-                .tempo_desde_ultimo_procedimento
-            )
+        if isinstance(resultado_query_diabetes, RowIterator) and isinstance(
+            resultado_query_hipertensao, RowIterator
+        ):
+            tempo_proc_dia = next(
+                resultado_query_diabetes
+            ).tempo_desde_ultimo_procedimento
+            tempo_proc_hiper = next(
+                resultado_query_hipertensao
+            ).tempo_desde_ultimo_procedimento
             tempo_desde_ultimo_procedimento = None
             if tempo_proc_dia is not None and tempo_proc_hiper is not None:
                 tempo_desde_ultimo_procedimento = np.minimum(
@@ -139,14 +141,13 @@ def obter_tempo_desde_ultimo_procedimento(
                     tempo_proc_hiper or np.inf,
                 )
         elif isinstance(resultado_query_diabetes, RowIterator):
-            tempo_desde_ultimo_procedimento = (
-                next(resultado_query_diabetes).tempo_desde_ultimo_procedimento
-            )
+            tempo_desde_ultimo_procedimento = next(
+                resultado_query_diabetes
+            ).tempo_desde_ultimo_procedimento
         elif isinstance(resultado_query_hipertensao, RowIterator):
-            tempo_desde_ultimo_procedimento = (
-                next(resultado_query_hipertensao)
-                .tempo_desde_ultimo_procedimento
-            )
+            tempo_desde_ultimo_procedimento = next(
+                resultado_query_hipertensao
+            ).tempo_desde_ultimo_procedimento
         else:
             raise ValueError(
                 f"Cidadão não encontrado nas listas de {linha_cuidado.value}."
@@ -169,7 +170,6 @@ def preparar_atributos_para_predicao(
     mensagem_template_embedding: list[float],
     mensagem_midia_embedding: list[float],
 ) -> pd.DataFrame:
-
     # categóricas do treino: linha_cuidado, cidadao_sexo, cidadao_raca_cor, mensagem_dia_semana
     # numéricas do treino: municipio_prop..., plano_privado, idade, tempo_desde..., mensagem_horario_relativo_12h
     row = {
@@ -178,9 +178,15 @@ def preparar_atributos_para_predicao(
         "cidadao_raca_cor": (cidadao_caracteristicas.raca_cor or "MISSING"),
         "mensagem_dia_semana": str(mensagem_dia_semana.value),
         "municipio_prop_domicilios_zona_rural": cidadao_caracteristicas.municipio_prop_domicilios_zona_rural,
-        "cidadao_plano_saude_privado": int(bool(cidadao_caracteristicas.plano_saude_privado)) if cidadao_caracteristicas.plano_saude_privado is not None else None,
+        "cidadao_plano_saude_privado": int(
+            bool(cidadao_caracteristicas.plano_saude_privado)
+        )
+        if cidadao_caracteristicas.plano_saude_privado is not None
+        else None,
         "cidadao_idade": cidadao_caracteristicas.idade,
-        "cidadao_tempo_desde_ultimo_procedimento": tempo_desde_ultimo_procedimento if tempo_desde_ultimo_procedimento is not None else cidadao_caracteristicas.tempo_desde_ultimo_procedimento,
+        "cidadao_tempo_desde_ultimo_procedimento": tempo_desde_ultimo_procedimento
+        if tempo_desde_ultimo_procedimento is not None
+        else cidadao_caracteristicas.tempo_desde_ultimo_procedimento,
         "mensagem_horario_relativo_12h": int(mensagem_horario) - 12,
         "mensagem_tipo": str(mensagem_tipo.value),
     }
@@ -231,7 +237,10 @@ def obter_template_embedding_por_nome(template_nome: str) -> np.ndarray:
         FROM `ip_mensageria_camada_prata.templates_embeddings`
         WHERE template_nome = '{template_nome}';
     """).result()
-    if not isinstance(resultado_query, _EmptyRowIterator) and resultado_query.total_rows > 0:
+    if (
+        not isinstance(resultado_query, _EmptyRowIterator)
+        and resultado_query.total_rows > 0
+    ):
         return np.array(next(resultado_query).embedding, dtype=float)
     raise HTTPException(
         status_code=HTTPStatus.NOT_FOUND,
@@ -250,18 +259,23 @@ def obter_template_embedding_por_texto(
     TODO: Substituir por chamada ao seu serviço de embeddings.
     Enquanto isso, devolve zeros (mesmo d do treino).
     """
-    texto = "\n".join([
-        template_texto,
-        botao0_texto or "",
-        botao1_texto or "",
-        botao2_texto or "",
-    ])
+    texto = "\n".join(
+        [
+            template_texto,
+            botao0_texto or "",
+            botao1_texto or "",
+            botao2_texto or "",
+        ]
+    )
     resultado_query = bq_client.query(f"""
         SELECT embedding
         FROM `ip_mensageria_camada_prata.templates_embeddings`
         WHERE content = '{texto}'
     """)
-    if isinstance(resultado_query, _EmptyRowIterator) or resultado_query.total_rows == 0:
+    if (
+        isinstance(resultado_query, _EmptyRowIterator)
+        or resultado_query.total_rows == 0
+    ):
         resultado_query = bq_client.query(f"""
             SELECT embedding
             FROM AI.GENERATE_EMBEDDING(
@@ -270,12 +284,14 @@ def obter_template_embedding_por_texto(
                 STRUCT(128 AS output_dimensionality)
             );
         """).result()
-        if isinstance(resultado_query, _EmptyRowIterator) or resultado_query.total_rows == 0:
+        if (
+            isinstance(resultado_query, _EmptyRowIterator)
+            or resultado_query.total_rows == 0
+        ):
             raise HTTPException(
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Internal Server Error :: Não foi possível obter o "
-                    "embedding.",
+                    "Internal Server Error :: Não foi possível obter o embedding.",
                 ),
             )
     return np.array(next(resultado_query).embedding, dtype=float)
@@ -302,7 +318,10 @@ def obter_midia_embedding(url: Optional[AnyUrl]) -> np.ndarray:
             status_code=HTTPStatus.BAD_REQUEST,
             detail="Bad Request :: O schema da URL não é válido.",
         )
-    if isinstance(resultado_query, _EmptyRowIterator) or resultado_query.total_rows == 0:
+    if (
+        isinstance(resultado_query, _EmptyRowIterator)
+        or resultado_query.total_rows == 0
+    ):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail=(
@@ -314,7 +333,11 @@ def obter_midia_embedding(url: Optional[AnyUrl]) -> np.ndarray:
 
 
 def converter_df_em_pool(df: pd.DataFrame, classificadores: Classificador) -> Pool:
-    cat_idx = [classificadores.atributos_colunas.index(c) for c in classificadores.atributos_categoricos if c in classificadores.atributos_colunas]
+    cat_idx = [
+        classificadores.atributos_colunas.index(c)
+        for c in classificadores.atributos_categoricos
+        if c in classificadores.atributos_colunas
+    ]
     return Pool(df, cat_features=cat_idx)
 
 

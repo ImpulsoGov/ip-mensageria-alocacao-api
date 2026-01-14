@@ -29,7 +29,9 @@ class DummyImputer:
 
 
 class DummyClassificador:
-    def __init__(self, atributos_colunas, atributos_categoricos, template_dims=3, midia_dims=2):
+    def __init__(
+        self, atributos_colunas, atributos_categoricos, template_dims=3, midia_dims=2
+    ):
         self.atributos_colunas = atributos_colunas
         self.atributos_categoricos = atributos_categoricos
         self.imputador_numerico = DummyImputer()
@@ -90,7 +92,9 @@ def test_preparar_atributos_para_predicao_basic():
     for i in range(midia_dims):
         base_cols.append(f"midia_emb_{i}")
 
-    classificadores = DummyClassificador(base_cols, ["linha_cuidado", "cidadao_sexo"], template_dims, midia_dims)
+    classificadores = DummyClassificador(
+        base_cols, ["linha_cuidado", "cidadao_sexo"], template_dims, midia_dims
+    )
 
     cidadao = modelos.CidadaoCaracteristicas(
         idade=30,
@@ -126,15 +130,17 @@ def test_preparar_atributos_para_predicao_basic():
 def test_converter_df_em_pool_uses_cat_indices(monkeypatch: pytest.MonkeyPatch):
     # build artefato where 'catcol' is categorical and present in feature_cols
     atributos_colunas = ["num1", "catcol", "num2"]
-    artefato = DummyClassificador(atributos_colunas, ["catcol"], template_dims=0, midia_dims=0)
+    artefato = DummyClassificador(
+        atributos_colunas, ["catcol"], template_dims=0, midia_dims=0
+    )
 
     df = pd.DataFrame({"num1": [1.0], "catcol": ["A"], "num2": [2.0]})
 
     captured = {}
 
     def fake_Pool(df_arg, cat_features=None):
-        captured['df'] = df_arg
-        captured['cat_features'] = cat_features
+        captured["df"] = df_arg
+        captured["cat_features"] = cat_features
         return "POOL_OBJ"
 
     monkeypatch.setattr(auxiliar, "Pool", fake_Pool)
@@ -142,7 +148,7 @@ def test_converter_df_em_pool_uses_cat_indices(monkeypatch: pytest.MonkeyPatch):
     res = auxiliar.converter_df_em_pool(df, artefato)
     assert res == "POOL_OBJ"
     # catcol index should be 1
-    assert captured['cat_features'] == [atributos_colunas.index("catcol")]
+    assert captured["cat_features"] == [atributos_colunas.index("catcol")]
 
 
 @pytest.fixture
@@ -165,13 +171,12 @@ def mock_query_result():
 
 @patch("ip_mensageria_alocacao_api.core.auxiliar.bq_client")
 def test_obter_caracteristicas_usuario(mock_bq_client):
-
     mock_row = Mock(
         idade=30,
-        sexo='Feminino',
-        raca_cor='Parda',
+        sexo="Feminino",
+        raca_cor="Parda",
         plano_saude_privado=True,
-        prop_domicilios_zona_rural=0.12
+        prop_domicilios_zona_rural=0.12,
     )
     mock_result = MockResult([mock_row])
     mock_query = Mock()
@@ -182,8 +187,8 @@ def test_obter_caracteristicas_usuario(mock_bq_client):
 
     assert isinstance(result, modelos.CidadaoCaracteristicas)
     assert result.idade == 30
-    assert result.sexo == 'Feminino'
-    assert result.raca_cor == 'Parda'
+    assert result.sexo == "Feminino"
+    assert result.raca_cor == "Parda"
     assert result.plano_saude_privado
     assert result.municipio_prop_domicilios_zona_rural == 0.12
 
@@ -196,7 +201,9 @@ def test_obter_tempo_desde_ultimo_procedimento_citotopatologico(mock_bq_client):
     mock_query.result.return_value = mock_result
     mock_bq_client.query.return_value = mock_query
 
-    result = auxiliar.obter_tempo_desde_ultimo_procedimento("123", modelos.LinhaCuidado.citotopatologico)
+    result = auxiliar.obter_tempo_desde_ultimo_procedimento(
+        "123", modelos.LinhaCuidado.citotopatologico
+    )
 
     assert result == 10
 
@@ -215,14 +222,20 @@ def test_obter_tempo_desde_ultimo_procedimento_cronicos(mock_bq_client):
     mock_bq_client.query.side_effect = [mock_query_diabetes, mock_query_hipertensao]
 
     # Need to patch isinstance to recognize MockResult as RowIterator
-    with patch("ip_mensageria_alocacao_api.core.auxiliar.isinstance") as mock_isinstance:
+    with patch(
+        "ip_mensageria_alocacao_api.core.auxiliar.isinstance"
+    ) as mock_isinstance:
+
         def isinstance_side_effect(obj, cls):
             if cls is RowIterator and isinstance(obj, MockResult):
                 return True
             return isinstance.__wrapped__(obj, cls)
+
         mock_isinstance.side_effect = isinstance_side_effect
 
-        result = auxiliar.obter_tempo_desde_ultimo_procedimento("123", modelos.LinhaCuidado.cronicos)
+        result = auxiliar.obter_tempo_desde_ultimo_procedimento(
+            "123", modelos.LinhaCuidado.cronicos
+        )
 
     assert result == 15  # min of 20 and 15
 
@@ -260,7 +273,7 @@ def test_obter_template_embedding_por_texto_cached(mock_bq_client):
     mock_result = MockResult([mock_row])
     mock_query_with_result = Mock()
     mock_query_with_result.result.return_value = mock_result
-    
+
     # Set up the mock to return _EmptyRowIterator on first call, then query with result on second call
     mock_bq_client.query.side_effect = [mock_empty, mock_query_with_result]
 
@@ -308,10 +321,16 @@ def test_preparar_atributos_para_predicao_missing_cidadao_data():
     # Create classificadores mock
     classificadores = Mock()
     classificadores.atributos_colunas = [
-        "linha_cuidado", "cidadao_sexo", "cidadao_raca_cor", "mensagem_dia_semana",
-        "municipio_prop_domicilios_zona_rural", "cidadao_plano_saude_privado",
-        "cidadao_idade", "cidadao_tempo_desde_ultimo_procedimento",
-        "mensagem_horario_relativo_12h", "mensagem_tipo"
+        "linha_cuidado",
+        "cidadao_sexo",
+        "cidadao_raca_cor",
+        "mensagem_dia_semana",
+        "municipio_prop_domicilios_zona_rural",
+        "cidadao_plano_saude_privado",
+        "cidadao_idade",
+        "cidadao_tempo_desde_ultimo_procedimento",
+        "mensagem_horario_relativo_12h",
+        "mensagem_tipo",
     ]
     classificadores.atributos_categoricos = ["linha_cuidado", "cidadao_sexo"]
     classificadores.imputador_numerico = Mock()
@@ -350,7 +369,7 @@ def test_preparar_atributos_para_predicao_missing_cidadao_data():
 def test_beta_from_mean_se_edge_cases():
     """Test beta_from_mean_se with edge case inputs."""
     from ip_mensageria_alocacao_api.core import auxiliar
-    
+
     # Test with p = 0
     alpha, beta = auxiliar.beta_from_mean_se(0.0, 0.1)
     assert alpha > 0
