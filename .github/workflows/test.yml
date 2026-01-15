@@ -10,10 +10,6 @@ on:
     branches:
       - main
 
-  schedule:
-    # Every sunday at 8:05 UTC
-    - cron: "5 8 * * 0"
-
 # If you trigger a new workflow while the previous one is running,
 # this will cancel the previous one.
 concurrency:
@@ -44,7 +40,7 @@ jobs:
       - name: Install the Dependencies
         run: |
           echo "Installing the dependencies..."
-          uv sync
+          setup-local
 
       - name: Check Linter
         run: |

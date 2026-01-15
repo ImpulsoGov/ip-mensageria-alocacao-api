@@ -15,9 +15,7 @@ IMAGE_TAG ?= latest
 IMAGE_URI := $(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REGISTRY_REPOSITORY)/$(IMAGE_NAME):$(IMAGE_TAG)
 API_CHAVE_SECRET ?= API_CHAVE:latest
 
-IMAGE_URI := gcr.io/$(PROJECT_ID)/$(IMAGE_NAME)
-DOCKERFILE := dockerfiles/python313/Dockerfile
-
+DOCKERFILE := dockerfiles/python$(PYTHON_VERSION)/Dockerfile
 PORT ?= 8080
 
 # ============================
