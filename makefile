@@ -10,6 +10,9 @@ JWT_ALGORITMO ?= HS256
 TOKEN_VALIDADE_MINUTOS ?= 5256000000
 BQ_PROJETO ?= $(PROJECT_ID)
 ARTEFATOS_PREDICAO_URI ?=
+REGISTRY_REPOSITORY ?= $(IMAGE_NAME)
+IMAGE_TAG ?= latest
+IMAGE_URI := $(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REGISTRY_REPOSITORY)/$(IMAGE_NAME):$(IMAGE_TAG)
 API_CHAVE_SECRET ?= API_CHAVE:latest
 
 IMAGE_URI := gcr.io/$(PROJECT_ID)/$(IMAGE_NAME)
@@ -89,10 +92,13 @@ dep-update:
 # Build & Deploy
 # ============================
 
+docker-login:
+	gcloud auth configure-docker $(REGION)-docker.pkg.dev --quiet
+
 docker-build:
 	docker build -f $(DOCKERFILE) -t $(IMAGE_URI) .
 
-docker-push:
+docker-push: docker-login
 	docker push $(IMAGE_URI)
 
 deploy-cloudrun: docker-build docker-push

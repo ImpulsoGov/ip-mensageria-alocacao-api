@@ -108,6 +108,7 @@ Usado apenas em máquinas locais.
   * BigQuery Job User
   * Cloud Storage Viewer (para o bucket de modelos classificadores)
   * Secret Manager Secret Accessor (para segredo com chave de API)
+  * Artifact Registry Writer (para implementação contínua)
 * Baixe o arquivo `credentials.json`
 * Copie `.env_sample` → `.env` e configure as variáveis necessárias, incluindo:
 
