@@ -27,7 +27,7 @@ jobs:
       TOKEN_VALIDADE_MINUTOS: 5256000000
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - id: auth
         uses: google-github-actions/auth@v2
