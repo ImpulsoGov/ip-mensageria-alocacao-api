@@ -2,6 +2,8 @@
 
 [![License](https://img.shields.io/cocoapods/l/AFNetworking?style=flat-square)](https://github.com/rednafi/think-asyncio/blob/master/LICENSE)
 
+***Veja a documentação pública da API em <https://ip-mensageria-alocacao-api-567502497958.us-central1.run.app/docs>.***
+
 Este pacote implementa um serviço com [FastAPI][fastapi] para alocação automatizada entre diferentes templates de mensagens, mídias e condições de envio (horário, dia da semana), equilibrando o valor de obter novas informações com a priorização das mensagens com maior probabilidade de sucesso.
 
 <details>
@@ -40,9 +42,9 @@ Este pacote implementa um serviço com [FastAPI][fastapi] para alocação automa
 │   ├── test_autenticacao.py
 │   ├── test_auxiliar.py
 │   ├── test_classificadores.py
-│   └── test_logger.py
-├── Caddyfile                   # Configurações do servidor Caddy
-├── docker-compose.yml          # Configurações do docker-compose
+│   ├── test_modelos.py
+│   ├── test_logger.py
+│   └── test_routes.py
 ├── LICENSE                     # licença MIT
 ├── makefile                    # scripts de manutenção e execução
 ├── pyproject.toml              # Configurações do Python
@@ -85,7 +87,78 @@ A seção [Apêndice técnico](#apendice-tecnico) apresenta a abordagem utilizad
 
 ## Instalação
 
-### Rodando no Docker
+### Pré-requisitos
+
+* Python >= 3.11 e <= 3.13
+* uv
+* Docker
+* Google Cloud SDK (gcloud)
+
+### 🔐 Configuração de credenciais (IMPORTANTE)
+
+Este projeto suporta **dois modos de autenticação**:
+
+#### Desenvolvimento local (com arquivo JSON)
+
+Usado apenas em máquinas locais.
+
+* Crie uma Service Account na GCP
+* Conceda as roles:
+  * BigQuery Data Viewer
+  * BigQuery Job User
+  * Cloud Storage Viewer (para o bucket de modelos classificadores)
+  * Secret Manager Secret Accessor (para segredo com chave de API)
+* Baixe o arquivo `credentials.json`
+* Copie `.env_sample` → `.env` e configure as variáveis necessárias, incluindo:
+
+```env
+GOOGLE_ARQUIVO_CREDENCIAIS=/app/credentials.json
+```
+
+#### Produção (Cloud Run – recomendado)
+
+**Não use arquivo JSON.**
+
+* Configure uma **Service Account no Cloud Run**
+* Atribua as mesmas roles acima
+* O código usa **Application Default Credentials (ADC)** automaticamente
+
+### Início rápido (TL;DR)
+
+#### Rodar localmente (sem Docker)
+
+```sh
+$ make setup-local
+$ make run-local
+```
+
+#### Rodar localmente em um container Docker
+
+```sh
+$ make run-container
+```
+
+A API ficará disponível em `http://localhost:5002/`.
+
+# Deploy Cloud Run
+
+Pré-requisitos:
+
+* `gcloud auth login`
+* Projeto GCP configurado
+
+```sh
+make deploy-cloudrun \
+  PROJECT_ID=meu-projeto-aqui \
+  REGION=regiao-do-projeto \
+  ARTEFATOS_PREDICAO_URI=gs://meu-bucket/modelos
+```
+
+O comando:
+
+* Constrói a imagem
+* Faz push para Google Cloud Registry
+* Cria/atualiza o serviço no Cloud Run
 
 - Clone o repositório e navegue até a raiz do projeto.
 
@@ -95,32 +168,15 @@ A seção [Apêndice técnico](#apendice-tecnico) apresenta a abordagem utilizad
     make run-container
     ```
 
-### Rodando localmente
-
-Se você deseja rodar o aplicativo localmente, sem usar o Docker, então:
-
-- Clone o repositório e navegue até a raiz do projeto.
-
-- Instale [uv][uv] para gerenciamento de dependências.
-
-- Inicie o aplicativo. Execute:
-
-    ```sh
-    make run-local
-    ```
-
-Isso irá configurar um ambiente virtual `.venv` no diretório atual com Python
-3.13, instalar dependências e iniciar o servidor [Uvicorn][uvicorn].
-
 ## Usando o serviço
 
 ### Explorando os endpoints
 
-Para explorar os endpoints, acesse o seguinte link no seu navegador:
+Para explorar os endpoints, acesse o seguinte link no seu navegador (_caso rodando localmente; se no Cloud Run, substitua `localhost` pelo endereço do serviço_ ):
 
-    ```sh
-    http://localhost:5002/docs
-    ```
+```sh
+http://localhost:5002/docs
+```
 
 ## API
 
@@ -157,7 +213,7 @@ Autentica um usuário e retorna um token JWT para uso nos demais endpoints.
 ```python
 import requests
 
-url = "http://0.0.0.0:5001/token"
+url = "http://0.0.0.0:5002/token"
 data = {
     "username": "meu-usuario-aqui",
     "password": "minha-senha-aqui",
@@ -218,7 +274,7 @@ Prevê a probabilidade de uma mensagem ser efetiva para um cidadão específico.
 ```python
 import requests
 
-url = "http://0.0.0.0:5001/prever_efetividade_mensagem"
+url = "http://0.0.0.0:5002/prever_efetividade_mensagem"
 params = {
     "cidadao_id": "meu-id-aqui",
     "linha_cuidado": "crônicos",
@@ -270,7 +326,7 @@ Seleciona a melhor mensagem entre várias opções usando Thompson Sampling.
 ```python
 import requests
 
-url = "http://0.0.0.0:5001/alocar"
+url = "http://0.0.0.0:5002/alocar"
 headers = {
     "accept": "application/json",
     "Content-Type": "application/json",
@@ -310,17 +366,30 @@ print(response.json())
 
 Este pacote está aberto para contribuições **apenas por colaboradores da ImpulsoGov**. Você pode entrar em contato com a ImpulsoGov por meio do e-mail [contato@impulsogov.org](mailto:contato@impulsogov.org).
 
-### Desenvolvendo
+Passo-a-passo para introduzir uma alteração:
 
-- Crie uma Service Account no Google Cloud Platform com acesso ao banco de dados da ImpulsoGov, e baixe o arquivo de credenciais ( `credentials.json` ). A Service Account deve ter as seguintes funções (_roles_) configurados no [controle de acesso da GCP](https://console.cloud.google.com/iam-admin/iam):
-    - `BigQuery Data Viewer`
-    - `BigQuery Job User`
-    - `Cloud Storage Viewer` (para o bucket onde os modelos estão armazenados)
-- Renomeie o arquivo `.env_sample` para `.env` e preencha com as informações necessárias - incluindo o caminho para o arquivo `credentials.json` baixado da GCP.
-- Rode testes com `make tests` (usa [pytest][pytest]).
-- Lint com [ruff] e verifique tipos com [mypy] usando `make lint`.
-- Atualize dependências com `make dep-update`.
-- Parar os contêineres com `make kill-container`.
+1. Crie uma _branch_ no GitHub
+2. Faça as alterações necessárias no código e comite os resultados
+2. Rode `make test`
+3. Rode `make lint`
+4. Submeta um _pull request_
+
+### CI/CD
+
+O pipeline de CI/CD é configurado para rodar os testes, a análise de qualidade (lint), construir a imagem Docker e enviá-la ao Google Cloud Run automaticamente após cada push para o `main` branch.
+
+Para que a implantação contínua com o Cloud Run funcione, você garantir que a Service Account utilizada está conectada ao GitHub por meio do Workload Identity Federation - mais informações [neste link](https://github.com/google-github-actions/auth?tab=readme-ov-file#workload-identity-federation-through-a-service-account).
+
+Garanta também que os seguintes segredos estejam disponíveis no ambiente de CI/CD:
+
+* `PROJECT_ID`: ID do projeto do BigQuery.
+* `PROJECT_NUMBER`: Número do projeto do BigQuery.
+* `IDENTITY_POOL`: ID do pool de identidade do Workload Identity Federation.
+* `IDENTITY_PROVIDER`: Nome do provedor de identidade do Workload Identity Federation.
+* `SERVICE_ACCOUNT`: Nome da Service Account do Cloud Run.
+* `API_CHAVE`: Chave de API para autenticação no serviço.
+* `ARTEFATOS_PREDICAO_URI`: URI do bucket de modelos classificadores.
+
 
 ## Apêndice técnico
 

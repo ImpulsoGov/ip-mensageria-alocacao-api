@@ -1,67 +1,113 @@
-path := .
+# ============================
+# Configurações padrão
+# ============================
 
-define Comment
-	- Run `make help` to see all the available options.
-	- Run `make lint` to run the linter.
-	- Run `make lint-check` to check linter conformity.
-	- Run `dep-lock` to lock the deps in 'requirements.txt' and 'requirements-dev.txt'.
-	- Run `dep-sync` to sync current environment up to date with the locked deps.
-endef
+PYTHON_VERSION ?= 3.13
+IMAGE_NAME ?= ip-mensageria-alocacao-api
+REGION ?= us-central1
+SERVICE_NAME ?= ip-mensageria-alocacao-api
+JWT_ALGORITMO ?= HS256
+TOKEN_VALIDADE_MINUTOS ?= 5256000000
+BQ_PROJETO ?= $(PROJECT_ID)
+ARTEFATOS_PREDICAO_URI ?=
+API_CHAVE_SECRET ?= API_CHAVE:latest
 
+IMAGE_URI := gcr.io/$(PROJECT_ID)/$(IMAGE_NAME)
+DOCKERFILE := dockerfiles/python313/Dockerfile
 
-.PHONY: lint
-lint: ruff mypy	## Apply all the linters.
+PORT ?= 8080
 
-.PHONY: lint-check
-lint-check:  ## Check whether the codebase satisfies the linter rules.
-	@echo
-	@echo "Checking linter rules..."
-	@echo "========================"
-	@echo
-	@uv run ruff check $(path)/src
-	@uv run mypy $(path)/src
+# ============================
+# Ajuda
+# ============================
 
-.PHONY: ruff
-ruff: ## Apply ruff.
-	@echo "Applying ruff..."
-	@echo "================"
-	@echo
-	@uv run ruff check --fix $(path)/src
-	@uv run ruff format $(path)/src
+help:
+	@echo ""
+	@echo "Comandos disponíveis:"
+	@echo ""
+	@echo "  setup-local        Cria .venv e instala dependências (uv)"
+	@echo "  run-local          Roda API localmente (uvicorn)"
+	@echo "  run-container      Roda API em container Docker"
+	@echo "  kill-container     Para containers docker-compose"
+	@echo ""
+	@echo "  test               Executa testes (pytest)"
+	@echo "  lint               Ruff  mypy"
+	@echo "  dep-update         Atualiza dependências (uv)"
+	@echo ""
+	@echo "  docker-build       Build da imagem Docker"
+	@echo "  docker-push        Push da imagem para GCR"
+	@echo "  deploy-cloudrun    Deploy no Google Cloud Run"
+	@echo ""
 
-.PHONY: mypy
-mypy: ## Apply mypy.
-	@echo
-	@echo "Applying mypy..."
-	@echo "================="
-	@echo
-	@uv run mypy $(path)/src
+# ============================
+# Desenvolvimento local
+# ============================
 
-.PHONY: help
-help: ## Show this help message.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+setup-local:
+	uv venv --python $(PYTHON_VERSION)
+	uv pip install -e .
 
-.PHONY: test
-test: ## Run the tests against the current version of Python.
-	uv run pytest tests/ -vv
+run-local:
+	uv run uvicorn ip_mensageria_alocacao_api.main:app \
+		--host 0.0.0.0 \
+		--port 5002 \
+		--reload
 
-.PHONY: dep-lock
-dep-lock: ## Freeze deps in 'requirements*.txt' files.
-	@uv lock
+# ============================
+# Containers
+# ============================
 
-.PHONY: dep-sync
-dep-sync: ## Sync venv installation with 'requirements.txt' file.
-	@uv sync
+run-container:
+	docker build -f $(DOCKERFILE) -t $(IMAGE_NAME):local .
+	docker run --rm \
+		-p 5002:$(PORT) \
+		--env-file .env \
+		-e PORT=$(PORT) \
+ 		-e GOOGLE_ARQUIVO_CREDENCIAIS=/app/credentials.json \
+ 		-v $$(pwd)/credentials.json:/app/credentials.json \
+		$(IMAGE_NAME):local
 
-.PHONY: dep-update
-dep-update: ## Update all the deps.
-	@chmod +x ./bin/update_deps.sh
-	@./bin/update_deps.s
+kill-container:
+	docker ps -q --filter "ancestor=$(IMAGE_NAME):local" | xargs -r docker stop
 
-.PHONY: build-test
-build-test: ## Build the test image. Change python version if needed.
-	docker build -f dockerfiles/python313/Dockerfile -t test-image .
+# ============================
+# Qualidade
+# ============================
 
-.PHONY: run-local
-run-local: ## Run the app locally.
-	PYTHONPATH=src uv run uvicorn ip_mensageria_alocacao_api.main:app --port 5002 --reload
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check --fix ./src
+	uv run ruff format ./src
+	uv run mypy ./src
+
+dep-update:
+	bash bin/update_deps.sh
+
+# ============================
+# Build & Deploy
+# ============================
+
+docker-build:
+	docker build -f $(DOCKERFILE) -t $(IMAGE_URI) .
+
+docker-push:
+	docker push $(IMAGE_URI)
+
+deploy-cloudrun: docker-build docker-push
+	gcloud run deploy $(SERVICE_NAME) \
+		--image $(IMAGE_URI) \
+		--region $(REGION) \
+		--platform managed \
+		--allow-unauthenticated \
+		--port $(PORT) \
+		--set-env-vars JWT_ALGORITMO=$(JWT_ALGORITMO),TOKEN_VALIDADE_MINUTOS=$(TOKEN_VALIDADE_MINUTOS),BQ_PROJETO=$(BQ_PROJETO),ARTEFATOS_PREDICAO_URI=$(ARTEFATOS_PREDICAO_URI) \
+		--set-secrets API_CHAVE=$(API_CHAVE_SECRET)
+
+# ============================
+# Limpeza
+# ============================
+
+clean:
+	rm -rf .venv

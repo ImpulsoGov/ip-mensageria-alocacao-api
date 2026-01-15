@@ -119,6 +119,10 @@ def _load_classificadores_module():
 
             def bucket(self, name):
                 return FakeBucket(name)
+            
+            @staticmethod
+            def from_service_account_json(filename):
+                return FakeClient()
 
         storage_mod.Client = FakeClient
         sys_modules_backup["google"] = sys.modules.get("google")

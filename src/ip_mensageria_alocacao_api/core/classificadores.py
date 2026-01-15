@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import pickle
 import tempfile
+from pathlib import Path
 from typing import Optional
 
 from catboost import CatBoostClassifier
 from google.cloud import storage
 from google.cloud.storage.bucket import Bucket
-from google.oauth2 import service_account
 
 from ip_mensageria_alocacao_api.core.configs import (
     ARTEFATOS_PREDICAO_URI,
@@ -16,15 +16,20 @@ from ip_mensageria_alocacao_api.core.configs import (
 )
 from ip_mensageria_alocacao_api.core.modelos import Classificador
 
-credentials = service_account.Credentials.from_service_account_file(
-    GOOGLE_ARQUIVO_CREDENCIAIS,
-)
-
 _ARTEFATOS: Optional[Classificador] = None
 
 
-if not ARTEFATOS_PREDICAO_URI or not ARTEFATOS_PREDICAO_URI.startswith("gs:/"):
+if not ARTEFATOS_PREDICAO_URI or not ARTEFATOS_PREDICAO_URI.startswith("gs://"):
     raise RuntimeError("Defina a envvar ARTEFATOS_PREDICAO_URI (gs://bucket/prefix)")
+
+
+def _make_storage_client() -> storage.Client:
+    # Em dev/local, se houver JSON montado, o próprio google lib pega via
+    # GOOGLE_APPLICATION_CREDENTIALS (ou você pode manter sua envvar e exportar).
+    # Em Cloud Run, ADC/Workload Identity funciona automaticamente sem chave JSON.
+    if GOOGLE_ARQUIVO_CREDENCIAIS and Path(GOOGLE_ARQUIVO_CREDENCIAIS).exists():
+        return storage.Client.from_service_account_json(GOOGLE_ARQUIVO_CREDENCIAIS)
+    return storage.Client()
 
 
 def _parse_gcs(uri: str) -> tuple[str, str]:
@@ -43,7 +48,7 @@ def carregar_classificadores() -> Classificador:
     if _ARTEFATOS is not None:
         return _ARTEFATOS
 
-    storage_client = storage.Client(credentials=credentials)
+    storage_client = _make_storage_client()
     bucket_name, prefix = _parse_gcs(ARTEFATOS_PREDICAO_URI)
     bucket = storage_client.bucket(bucket_name)
 

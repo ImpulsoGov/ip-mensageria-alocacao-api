@@ -1,0 +1,50 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+      PROJECT_NUMBER: ${{ secrets.PROJECT_NUMBER }}
+      REGION: us-central1
+      SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
+      SERVICE_NAME: ip-mensageria-alocacao-api
+      IMAGE_NAME: ip-mensageria-alocacao-api
+      IDENTITY_POOL: ${{ secrets.IDENTITY_POOL }}
+      IDENTITY_PROVIDER: ${{ secrets.IDENTITY_PROVIDER }}
+      PORT: 8080
+      ARTEFATOS_PREDICAO_URI: ${{ secrets.ARTEFATOS_PREDICAO_URI }}
+      JWT_ALGORITMO: HS256
+      TOKEN_VALIDADE_MINUTOS: 5256000000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ env.IDENTITY_POOL }}/providers/${{ env.IDENTITY_PROVIDER }}"
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy (via Makefile)
+        run: |
+          make deploy-cloudrun \
+            PROJECT_ID="${{ env.PROJECT_ID }}" \
+            REGION="${{ env.REGION }}" \
+            SERVICE_NAME="${{ env.SERVICE_NAME }}" \
+            IMAGE_NAME="${{ env.IMAGE_NAME }}" \
+            PORT="${{ env.PORT }}"
+            ARTEFATOS_PREDICAO_URI="${{ env.ARTEFATOS_PREDICAO_URI }}" \
+            JWT_ALGORITMO="${{ env.JWT_ALGORITMO }}" \
+            TOKEN_VALIDADE_MINUTOS="${{ env.TOKEN_VALIDADE_MINUTOS }}"

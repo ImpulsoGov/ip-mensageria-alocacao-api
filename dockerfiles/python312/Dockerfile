@@ -40,8 +40,7 @@ COPY --from=builder /app /app
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Expose the application port
-EXPOSE 5001
+EXPOSE 8080
 
 # Entry point for running the application
-ENTRYPOINT ["gunicorn", "ip_mensageria_alocacao_api.main:app", "--workers", "2", "--worker-class", \
-        "uvicorn.workers.UvicornWorker",  "-b", "0.0.0.0:5001", "--timeout", "120" ]
+ENTRYPOINT ["sh", "-c", "exec gunicorn ip_mensageria_alocacao_api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8080} --timeout 120"]

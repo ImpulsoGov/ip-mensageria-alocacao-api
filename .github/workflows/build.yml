@@ -2,13 +2,12 @@ name: Build and test containers
 
 on:
   push:
+    branches:
+      - main
 
   pull_request:
     branches:
-      - master
-  schedule:
-    # Every Sunday at 8:05 UTC
-    - cron: "5 8 * * 0"
+      - main
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -17,6 +16,12 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      API_CHAVE: ${{ secrets.API_CHAVE }}
+      ARTEFATOS_PREDICAO_URI: ${{ secrets.ARTEFATOS_PREDICAO_URI }}
+      JWT_ALGORITMO: HS256
+      PORT: 8080
+      TOKEN_VALIDADE_MINUTOS: 5256000000
 
     strategy:
       matrix:
@@ -30,18 +35,29 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Spin up container
+      env:
+        DOCKERFILE: dockerfiles/python${{ matrix.python-version }}/Dockerfile
+        IMAGE_NAME: ${{ matrix.python-version }}-test-image
       run: |
-        sed -i "s/PYTHON_VERSION=.*/PYTHON_VERSION=${{ matrix.python-version }}/" '.env'
         echo "Building container for Python ${{ matrix.python-version }}."
         cat
-        docker compose up -d
+        docker build -f ${{ env.DOCKERFILE }} -t ${{ env.IMAGE_NAME }}:local .
+        docker run --rm \
+          -p 5002:${{ env.PORT }} \
+          -e PORT=${{ env.PORT }} \
+          -e PYTHON_VERSION=${{ matrix.python-version }} \
+          -e API_CHAVE=${{ env.API_CHAVE }} \
+          -e JWT_ALGORITMO=${{ env.JWT_ALGORITMO }} \
+          -e TOKEN_VALIDADE_MINUTOS=${{ env.TOKEN_VALIDADE_MINUTOS }} \
+          ${{ env.IMAGE_NAME }}:local
+
 
     - name: Wait and check the health of the container
       run: |
         attempts=0
 
         while [ $attempts -lt 5 ]; do
-          if curl http://localhost:5002; then
+          if curl -fsS http://localhost:${{ env.PORT }}/; then
             echo "Success!"
             exit 0
           fi
