@@ -40,7 +40,7 @@ jobs:
       - name: Install the Dependencies
         run: |
           echo "Installing the dependencies..."
-          setup-local
+          make setup-local
 
       - name: Check Linter
         run: |

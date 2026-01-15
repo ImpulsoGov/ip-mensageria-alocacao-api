@@ -17,6 +17,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
+      BQ_PROJETO: ${{ secrets.PROJECT_ID }}
       API_CHAVE: ${{ secrets.API_CHAVE }}
       ARTEFATOS_PREDICAO_URI: ${{ secrets.ARTEFATOS_PREDICAO_URI }}
       JWT_ALGORITMO: HS256
@@ -46,10 +47,12 @@ jobs:
           -p 5002:${{ env.PORT }} \
           -e PORT=${{ env.PORT }} \
           -e PYTHON_VERSION=${{ matrix.python-version }} \
+          -e BQ_PROJETO=${{ env.BQ_PROJETO }} \
           -e API_CHAVE=${{ env.API_CHAVE }} \
           -e JWT_ALGORITMO=${{ env.JWT_ALGORITMO }} \
           -e TOKEN_VALIDADE_MINUTOS=${{ env.TOKEN_VALIDADE_MINUTOS }} \
           ${{ env.IMAGE_NAME }}:local
+          -e ARTEFATOS_PREDICAO_URI=${{ env.ARTEFATOS_PREDICAO_URI }} \
 
 
     - name: Wait and check the health of the container
