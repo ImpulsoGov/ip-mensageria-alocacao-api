@@ -13,6 +13,7 @@ from numpy import dtype, ndarray
 from pydantic import AnyUrl
 
 from ip_mensageria_alocacao_api.core.bd import bq_client
+from ip_mensageria_alocacao_api.core.configs import BQ_PROJETO
 from ip_mensageria_alocacao_api.core.modelos import (
     CidadaoCaracteristicas,
     Classificador,
@@ -309,8 +310,8 @@ def obter_midia_embedding(url: Optional[AnyUrl]) -> np.ndarray:
     elif str(url).startswith("http"):
         resultado_query = bq_client.query(f"""
             SELECT embedding
-            FROM `predictive-keep-314223.ip_mensageria_camada_prata.templates_midias_embeddings` e
-            INNER JOIN `predictive-keep-314223.ip_mensageria_camada_bronze.templates_midias` t
+            FROM `{BQ_PROJETO}.ip_mensageria_camada_prata.templates_midias_embeddings` e
+            INNER JOIN `{BQ_PROJETO}.ip_mensageria_camada_bronze.templates_midias` t
                 ON REGEXP_REPLACE(t.gcs_referencia.uri, r'ip-mensageria-turn-midias/ip-mensageria-turn-midias/o/', 'ip-mensageria-turn-midias/') = e.ref.uri
             WHERE t.url_turn = '{url}'
         """).result()
