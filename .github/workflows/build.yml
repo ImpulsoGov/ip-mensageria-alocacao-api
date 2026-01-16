@@ -51,8 +51,8 @@ jobs:
           -e API_CHAVE=${{ env.API_CHAVE }} \
           -e JWT_ALGORITMO=${{ env.JWT_ALGORITMO }} \
           -e TOKEN_VALIDADE_MINUTOS=${{ env.TOKEN_VALIDADE_MINUTOS }} \
-          ${{ env.IMAGE_NAME }}:local
           -e ARTEFATOS_PREDICAO_URI=${{ env.ARTEFATOS_PREDICAO_URI }} \
+          ${{ env.IMAGE_NAME }}:local
 
 
     - name: Wait and check the health of the container

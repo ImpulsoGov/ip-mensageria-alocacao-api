@@ -46,7 +46,7 @@ jobs:
             SERVICE_NAME="${{ env.SERVICE_NAME }}" \
             IMAGE_NAME="${{ env.IMAGE_NAME }}" \
             IMAGE_TAG="${{ env.IMAGE_TAG }}" \
-            PORT="${{ env.PORT }}"
+            PORT="${{ env.PORT }}" \
             ARTEFATOS_PREDICAO_URI="${{ env.ARTEFATOS_PREDICAO_URI }}" \
             JWT_ALGORITMO="${{ env.JWT_ALGORITMO }}" \
             TOKEN_VALIDADE_MINUTOS="${{ env.TOKEN_VALIDADE_MINUTOS }}"

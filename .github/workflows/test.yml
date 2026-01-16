@@ -24,7 +24,15 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
-
+    
+    env:
+      BQ_PROJETO: ${{ secrets.PROJECT_ID }}
+      API_CHAVE: ${{ secrets.API_CHAVE }}
+      ARTEFATOS_PREDICAO_URI: ${{ secrets.ARTEFATOS_PREDICAO_URI }}
+      JWT_ALGORITMO: HS256
+      PORT: 8080
+      TOKEN_VALIDADE_MINUTOS: 5256000000
+  
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
