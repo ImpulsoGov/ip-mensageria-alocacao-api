@@ -5,21 +5,19 @@ from functools import wraps
 from http import HTTPStatus
 from typing import Callable, ParamSpec, TypeVar
 
-from fastapi import APIRouter, Header, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Header, HTTPException
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from ip_mensageria_alocacao_api.core import configs
-from ip_mensageria_alocacao_api.core.bd import bq_client
+from ip_mensageria_alocacao_api.core.bd import make_bq_client
 from ip_mensageria_alocacao_api.core.modelos import TokenDados, UsuarioNaBase
 
 P = ParamSpec("P")
 R = TypeVar("R")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
-router = APIRouter()
+bq_client = make_bq_client()
 
 
 def verificar_senha(plain_password: str, senha_hash: str) -> bool:

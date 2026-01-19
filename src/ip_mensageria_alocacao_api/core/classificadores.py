@@ -19,10 +19,6 @@ from ip_mensageria_alocacao_api.core.modelos import Classificador
 _ARTEFATOS: Optional[Classificador] = None
 
 
-if not ARTEFATOS_PREDICAO_URI or not ARTEFATOS_PREDICAO_URI.startswith("gs://"):
-    raise RuntimeError("Defina a envvar ARTEFATOS_PREDICAO_URI (gs://bucket/prefix)")
-
-
 def _make_storage_client() -> storage.Client:
     # Em dev/local, se houver JSON montado, o próprio google lib pega via
     # GOOGLE_APPLICATION_CREDENTIALS (ou você pode manter sua envvar e exportar).
@@ -47,6 +43,11 @@ def carregar_classificadores() -> Classificador:
     global _ARTEFATOS
     if _ARTEFATOS is not None:
         return _ARTEFATOS
+
+    if not ARTEFATOS_PREDICAO_URI or not ARTEFATOS_PREDICAO_URI.startswith("gs://"):
+        raise RuntimeError(
+            "Defina a envvar ARTEFATOS_PREDICAO_URI (gs://bucket/prefix)"
+        )
 
     storage_client = _make_storage_client()
     bucket_name, prefix = _parse_gcs(ARTEFATOS_PREDICAO_URI)

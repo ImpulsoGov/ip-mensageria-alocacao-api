@@ -8,17 +8,24 @@ from ip_mensageria_alocacao_api.core.configs import (
     GOOGLE_ARQUIVO_CREDENCIAIS,
 )
 
+_bq_client = None
+
 
 def make_bq_client() -> bigquery.Client:
+    global _bq_client
+
+    if _bq_client is not None:
+        return _bq_client
+
     # Em dev/local, pode haver um arquivo de service account montado no container.
     if GOOGLE_ARQUIVO_CREDENCIAIS and Path(GOOGLE_ARQUIVO_CREDENCIAIS).exists():
         credentials = service_account.Credentials.from_service_account_file(
             GOOGLE_ARQUIVO_CREDENCIAIS,
         )
-        return bigquery.Client(project=BQ_PROJETO, credentials=credentials)
+        _bq_client = bigquery.Client(project=BQ_PROJETO, credentials=credentials)
 
     # No Cloud Run, use Application Default Credentials (Workload Identity).
-    return bigquery.Client(project=BQ_PROJETO)
+    else:
+        _bq_client = bigquery.Client(project=BQ_PROJETO)
 
-
-bq_client = make_bq_client()
+    return _bq_client

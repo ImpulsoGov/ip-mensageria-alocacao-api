@@ -12,7 +12,7 @@ from google.cloud.bigquery.table import RowIterator, _EmptyRowIterator
 from numpy import dtype, ndarray
 from pydantic import AnyUrl
 
-from ip_mensageria_alocacao_api.core.bd import bq_client
+from ip_mensageria_alocacao_api.core.bd import make_bq_client
 from ip_mensageria_alocacao_api.core.configs import BQ_PROJETO
 from ip_mensageria_alocacao_api.core.modelos import (
     CidadaoCaracteristicas,
@@ -21,6 +21,8 @@ from ip_mensageria_alocacao_api.core.modelos import (
     LinhaCuidado,
     MensagemTipo,
 )
+
+bq_client = make_bq_client()
 
 
 def beta_from_mean_se(p: float, se: float, eps: float = 1e-6) -> Tuple[float, float]:
