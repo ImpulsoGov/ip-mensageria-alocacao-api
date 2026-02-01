@@ -36,7 +36,7 @@ jobs:
           workload_identity_provider: "projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ env.IDENTITY_POOL }}/providers/${{ env.IDENTITY_PROVIDER }}"
           service_account: ${{ env.SERVICE_ACCOUNT }}
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@v3
 
       - name: Deploy (via Makefile)
         run: |
