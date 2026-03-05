@@ -371,10 +371,10 @@ Este pacote está aberto para contribuições **apenas por colaboradores da Impu
 Passo-a-passo para introduzir uma alteração:
 
 1. Crie uma _branch_ no GitHub
-2. Faça as alterações necessárias no código e comite os resultados
+2. Faça as alterações necessárias no código
 2. Rode `make test`
 3. Rode `make lint`
-4. Submeta um _pull request_
+4. Comite os resultados e submeta um _pull request_
 
 ### CI/CD
 
