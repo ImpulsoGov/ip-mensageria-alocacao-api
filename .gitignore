@@ -140,3 +140,7 @@ cython_debug/
 # Sensitive environment variables and credentials
 .env
 credentials.json
+
+# code assistants
+.sisyphus
+.opencode
