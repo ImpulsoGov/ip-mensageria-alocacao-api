@@ -1,31 +1,53 @@
 from __future__ import annotations
 
 import json
+import logging
 import pickle
 import tempfile
 from pathlib import Path
 from typing import Optional
 
 from catboost import CatBoostClassifier
+from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import storage
 from google.cloud.storage.bucket import Bucket
 
-from ip_mensageria_alocacao_api.core.configs import (
-    ARTEFATOS_PREDICAO_URI,
-    GOOGLE_ARQUIVO_CREDENCIAIS,
-)
+from ip_mensageria_alocacao_api.core import configs
 from ip_mensageria_alocacao_api.core.modelos import Classificador
 
 _ARTEFATOS: Optional[Classificador] = None
+
+logger = logging.getLogger(__name__)
+
+
+def _classificador_offline() -> Classificador:
+    return Classificador(
+        modelos=[],
+        atributos_colunas=[],
+        atributos_categoricos=[],
+        imputador_numerico=None,
+        template_embedding_dims=0,
+        midia_embedding_dims=0,
+    )
 
 
 def _make_storage_client() -> storage.Client:
     # Em dev/local, se houver JSON montado, o próprio google lib pega via
     # GOOGLE_APPLICATION_CREDENTIALS (ou você pode manter sua envvar e exportar).
     # Em Cloud Run, ADC/Workload Identity funciona automaticamente sem chave JSON.
-    if GOOGLE_ARQUIVO_CREDENCIAIS and Path(GOOGLE_ARQUIVO_CREDENCIAIS).exists():
-        return storage.Client.from_service_account_json(GOOGLE_ARQUIVO_CREDENCIAIS)
-    return storage.Client()
+    try:
+        if (
+            configs.GOOGLE_ARQUIVO_CREDENCIAIS
+            and Path(configs.GOOGLE_ARQUIVO_CREDENCIAIS).exists()
+        ):
+            return storage.Client.from_service_account_json(
+                configs.GOOGLE_ARQUIVO_CREDENCIAIS
+            )
+        return storage.Client()
+    except DefaultCredentialsError as exc:
+        raise RuntimeError(
+            "Não foi possível autenticar com as credenciais do Google Cloud"
+        ) from exc
 
 
 def _parse_gcs(uri: str) -> tuple[str, str]:
@@ -41,16 +63,21 @@ def _baixar_blob_como_bytes(bucket: Bucket, path: str) -> bytes:
 
 def carregar_classificadores() -> Classificador:
     global _ARTEFATOS
+    if configs.CARREGAR_CLASSIFICADORES_OFFLINE:
+        logger.warning("Modo offline ativado: retornando classificador vazio")
+        return _classificador_offline()
+
     if _ARTEFATOS is not None:
         return _ARTEFATOS
 
-    if not ARTEFATOS_PREDICAO_URI or not ARTEFATOS_PREDICAO_URI.startswith("gs://"):
+    artefatos_predicao_uri = configs.ARTEFATOS_PREDICAO_URI
+    if not artefatos_predicao_uri or not artefatos_predicao_uri.startswith("gs://"):
         raise RuntimeError(
             "Defina a envvar ARTEFATOS_PREDICAO_URI (gs://bucket/prefix)"
         )
 
     storage_client = _make_storage_client()
-    bucket_name, prefix = _parse_gcs(ARTEFATOS_PREDICAO_URI)
+    bucket_name, prefix = _parse_gcs(artefatos_predicao_uri)
     bucket = storage_client.bucket(bucket_name)
 
     meta = json.loads(

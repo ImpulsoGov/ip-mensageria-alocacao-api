@@ -19,3 +19,6 @@ GOOGLE_ARQUIVO_CREDENCIAIS = config(
     "GOOGLE_ARQUIVO_CREDENCIAIS", cast=str, default=None
 )
 ARTEFATOS_PREDICAO_URI = config("ARTEFATOS_PREDICAO_URI", cast=str)  # gs://bucket/
+CARREGAR_CLASSIFICADORES_OFFLINE = config(
+    "CARREGAR_CLASSIFICADORES_OFFLINE", cast=bool, default=False
+)
