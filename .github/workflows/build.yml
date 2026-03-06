@@ -18,6 +18,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       BQ_PROJETO: ${{ secrets.PROJECT_ID }}
       API_CHAVE: ${{ secrets.API_CHAVE }}
@@ -25,6 +26,7 @@ jobs:
       CARREGAR_CLASSIFICADORES_OFFLINE: "true"
       JWT_ALGORITMO: HS256
       PORT: 8080
+      HOST_PORT: 5002
       TOKEN_VALIDADE_MINUTOS: 5256000000
 
     strategy:
@@ -42,12 +44,13 @@ jobs:
       env:
         DOCKERFILE: dockerfiles/python${{ matrix.python-version }}/Dockerfile
         IMAGE_NAME: ${{ matrix.python-version }}-test-image
+        HOST_PORT: ${{ env.HOST_PORT }}
       run: |
         echo "Building container for Python ${{ matrix.python-version }}."
-        cat
         docker build -f ${{ env.DOCKERFILE }} -t ${{ env.IMAGE_NAME }}:local .
-        docker run --rm \
-          -p 5002:${{ env.PORT }} \
+        docker run --rm -d \
+          -p ${{ env.HOST_PORT }}:${{ env.PORT }} \
+          -p ${{ env.HOST_PORT }}:${{ env.PORT }} \
           -e PORT=${{ env.PORT }} \
           -e PYTHON_VERSION=${{ matrix.python-version }} \
           -e BQ_PROJETO=${{ env.BQ_PROJETO }} \
@@ -55,6 +58,7 @@ jobs:
           -e JWT_ALGORITMO=${{ env.JWT_ALGORITMO }} \
           -e TOKEN_VALIDADE_MINUTOS=${{ env.TOKEN_VALIDADE_MINUTOS }} \
           -e ARTEFATOS_PREDICAO_URI=${{ env.ARTEFATOS_PREDICAO_URI }} \
+          --name ${{ env.IMAGE_NAME }}-container \
           ${{ env.IMAGE_NAME }}:local
 
 
@@ -63,7 +67,7 @@ jobs:
         attempts=0
 
         while [ $attempts -lt 5 ]; do
-          if curl -fsS http://localhost:${{ env.PORT }}/; then
+          if curl -fsS http://localhost:${{ env.HOST_PORT }}/; then
             echo "Success!"
             exit 0
           fi
@@ -74,3 +78,8 @@ jobs:
 
         echo "Failed after $attempts attempts"
         exit 1
+
+    - name: Stop the container
+      if: always()
+      run: |
+        docker stop ${{ env.IMAGE_NAME }}-container || true
