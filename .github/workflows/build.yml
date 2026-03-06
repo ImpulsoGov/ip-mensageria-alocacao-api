@@ -48,8 +48,8 @@ jobs:
       run: |
         echo "Building container for Python ${{ matrix.python-version }}."
         docker build -f ${{ env.DOCKERFILE }} -t ${{ env.IMAGE_NAME }}:local .
+        docker rm -f ${{ env.IMAGE_NAME }}-container >/dev/null 2>&1 || true
         docker run --rm -d \
-          -p ${{ env.HOST_PORT }}:${{ env.PORT }} \
           -p ${{ env.HOST_PORT }}:${{ env.PORT }} \
           -e PORT=${{ env.PORT }} \
           -e PYTHON_VERSION=${{ matrix.python-version }} \
